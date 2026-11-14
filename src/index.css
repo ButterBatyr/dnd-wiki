@@ -1,0 +1,44 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html { background: #130f0b; }
+  body {
+    @apply font-body text-parchment antialiased;
+    background-color: #130f0b;
+    background-image:
+      radial-gradient(1100px 520px at 50% -8%, rgba(201, 162, 75, 0.11), transparent 62%),
+      radial-gradient(700px 480px at 100% 100%, rgba(155, 58, 36, 0.12), transparent 60%);
+    background-attachment: fixed;
+    font-size: 17px;
+    line-height: 1.6;
+  }
+  h1, h2, h3, h4 { @apply font-display text-gold-light; }
+  a { @apply text-gold-light; }
+  :focus-visible { outline: 2px solid #e3c377; outline-offset: 2px; }
+  ::selection { background: rgba(201, 162, 75, 0.35); }
+}
+
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-sm border px-4 py-2 font-display text-base
+      transition-colors disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .btn-gold { @apply border-gold bg-gold text-ink hover:bg-gold-light; }
+  .btn-ghost { @apply border-gold/50 bg-transparent text-gold-light hover:bg-gold/10; }
+  .btn-danger { @apply border-blood bg-transparent text-blood-light hover:bg-blood/20; }
+  .btn-sm { @apply px-3 py-1 text-sm; }
+  .input {
+    @apply w-full rounded-sm border border-gold/30 bg-coal px-3 py-2 text-parchment placeholder:text-dust
+      focus:border-gold focus:outline-none;
+  }
+  .label { @apply mb-1 block font-display text-sm text-vellum; }
+  .panel { @apply rounded-sm border border-gold/25 bg-coal/80 p-4; }
+  .badge { @apply inline-block rounded-sm border px-2 py-0.5 font-display text-xs; }
+  .frame { @apply border-4 border-double border-gold/45 bg-coal/70; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
+}
