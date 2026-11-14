@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../lib/auth';
+import { useSettings } from '../lib/settings';
 import { fmtDate } from '../lib/util';
 import type { ReqStatus, Request } from '../lib/types';
 
@@ -14,6 +15,7 @@ export const STATUS_STYLE: Record<ReqStatus, string> = {
 
 export default function Inventory() {
   const { session } = useAuth();
+  const { settings } = useSettings();
   const [items, setItems] = useState<Request[]>([]);
   const [title, setTitle] = useState('');
   const [comment, setComment] = useState('');
@@ -26,7 +28,7 @@ export default function Inventory() {
       .select('*, entries(id, title, status)')
       .eq('player_id', session!.user.id)
       .order('created_at', { ascending: false });
-    setItems((data as Request[]) ?? []);
+    setItems((data as unknown as Request[]) ?? []);
   }, [session]);
 
   useEffect(() => { load(); }, [load]);
@@ -35,7 +37,7 @@ export default function Inventory() {
     e.preventDefault();
     setBusy(true);
     setError('');
-    const { error: err } = await supabase.from('requests').insert({ title: title.trim(), comment: comment.trim() || null });
+    const { error: err } = await supabase.from('requests').insert({ kind: 'new', title: title.trim(), comment: comment.trim() || null });
     setBusy(false);
     if (err) { setError(err.message); return; }
     setTitle(''); setComment('');
@@ -50,8 +52,8 @@ export default function Inventory() {
   return (
     <div className="mx-auto max-w-2xl space-y-8">
       <section>
-        <h1 className="text-3xl">Мой инвентарь</h1>
-        <p className="mt-1 text-vellum">Нашли предмет или документ? Напишите, что у вас есть, — мастер добавит его описание в записи.</p>
+        <h1 className="text-3xl">{settings.navRequests}</h1>
+        <p className="mt-1 text-vellum">{settings.requestsIntro}</p>
         <form onSubmit={send} className="panel mt-4 space-y-3">
           <div>
             <label className="label" htmlFor="rt">Что у вас есть</label>
@@ -78,15 +80,21 @@ export default function Inventory() {
                 <span className="ml-auto text-sm text-dust">{fmtDate(r.created_at)}</span>
               </div>
               {r.comment && <p className="mt-1 text-vellum">{r.comment}</p>}
-              {r.entries?.status === 'released' && (
-                <p className="mt-2">Запись готова: <Link to={`/e/${r.entries.id}`}>{r.entries.title}</Link></p>
+
+              {r.kind === 'edit' ? (
+                <>
+                  {r.status === 'approved' && r.entries && <p className="mt-2">Правка применена: <Link to={`/e/${r.entries.id}`}>{r.entries.title}</Link></p>}
+                  {r.status === 'new' && r.entries && <p className="mt-2 text-dust">Запись: <Link to={`/e/${r.entries.id}`}>{r.entries.title}</Link></p>}
+                </>
+              ) : (
+                <>
+                  {r.entries?.status === 'released' && <p className="mt-2">Запись готова: <Link to={`/e/${r.entries.id}`}>{r.entries.title}</Link></p>}
+                  {r.status === 'approved' && r.entries?.status !== 'released' && (
+                    <p className="mt-2 text-dust">Мастер принял заявку, запись появится, когда он её откроет.</p>
+                  )}
+                </>
               )}
-              {r.status === 'approved' && r.entries?.status !== 'released' && (
-                <p className="mt-2 text-dust">Мастер принял заявку, запись появится, когда он её откроет.</p>
-              )}
-              {r.status === 'new' && (
-                <button className="btn btn-danger btn-sm mt-2" onClick={() => withdraw(r.id)}>Отозвать</button>
-              )}
+              {r.status === 'new' && <button className="btn btn-danger btn-sm mt-2" onClick={() => withdraw(r.id)}>Отозвать</button>}
             </li>
           ))}
         </ul>

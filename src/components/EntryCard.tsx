@@ -1,31 +1,51 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Img } from '../lib/images';
-import type { Entry } from '../lib/types';
+import { CroppedImg } from './CropFrame';
+import EntryBadge from './EntryBadge';
+import Lightbox from './Lightbox';
 import { useAuth } from '../lib/auth';
+import type { Category, Entry } from '../lib/types';
+import { catColor, summaryOf, tint } from '../lib/util';
 
-export default function EntryCard({ entry, categoryName }: { entry: Entry; categoryName?: string }) {
+export default function EntryCard({ entry, category }: { entry: Entry; category?: Category | null }) {
   const { isDm } = useAuth();
+  const [open, setOpen] = useState(false);
+  const col = catColor(category);
+
   return (
-    <Link
-      to={`/e/${entry.id}`}
-      className="group block overflow-hidden rounded-sm border border-gold/25 bg-coal text-parchment no-underline hover:border-gold"
+    <div
+      className="card-lift group relative flex overflow-hidden rounded-sm border bg-coal sm:flex-col"
+      style={{ borderColor: tint(col, 40), borderTopColor: col, borderTopWidth: 3 }}
     >
-      {entry.image_path ? (
-        <Img path={entry.image_path} alt={entry.title} className="aspect-[4/3] w-full object-cover" />
-      ) : (
-        <div className="flex aspect-[4/3] w-full items-center justify-center bg-bark text-4xl text-gold/40" aria-hidden>
-          ❖
-        </div>
-      )}
-      <div className="p-3">
+      <div className="relative w-2/5 shrink-0 sm:w-full">
+        <Link to={`/e/${entry.id}`} tabIndex={-1} aria-hidden>
+          <CroppedImg path={entry.image_path} crop={entry.image_crop} alt="" />
+        </Link>
+        {entry.image_path && (
+          <button
+            type="button"
+            onClick={() => setOpen(true)}
+            aria-label="Посмотреть картинку целиком"
+            title="Посмотреть целиком"
+            className="absolute right-1.5 top-1.5 flex h-8 w-8 items-center justify-center rounded-sm border border-gold/60 bg-ink/75 text-gold-light backdrop-blur-sm hover:bg-ink"
+          >
+            ⤢
+          </button>
+        )}
+      </div>
+
+      <Link to={`/e/${entry.id}`} className="flex min-w-0 flex-1 flex-col p-3 text-parchment no-underline">
         <h3 className="text-lg leading-snug group-hover:text-gold">{entry.title}</h3>
         <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-dust">
-          {categoryName && <span>{categoryName}</span>}
-          {isDm && entry.status === 'unreleased' && (
-            <span className="badge border-blood text-blood-light">скрыто</span>
-          )}
+          {category && <span>{category.icon ? `${category.icon} ` : ''}{category.name}</span>}
+          <EntryBadge label={entry.badge} category={category} />
+          {isDm && entry.status === 'unreleased' && <span className="badge border-blood text-blood-light">скрыто</span>}
         </div>
-      </div>
-    </Link>
+        <p className="mt-2 line-clamp-3 text-sm text-vellum">{summaryOf(entry)}</p>
+        <span className="mt-auto pt-2 text-sm text-gold-light">Далее…</span>
+      </Link>
+
+      {open && entry.image_path && <Lightbox path={entry.image_path} alt={entry.title} onClose={() => setOpen(false)} />}
+    </div>
   );
 }

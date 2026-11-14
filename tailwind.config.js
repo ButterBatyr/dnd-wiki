@@ -1,19 +1,21 @@
 import typography from '@tailwindcss/typography';
 
+const c = (name) => `rgb(var(--c-${name}) / <alpha-value>)`;
+
 /** @type {import('tailwindcss').Config} */
 export default {
   content: ['./index.html', './src/**/*.{ts,tsx}'],
   theme: {
     extend: {
       colors: {
-        ink: '#130f0b',
-        coal: '#1d1712',
-        bark: '#2a2119',
-        parchment: '#eadfc4',
-        vellum: '#cdbf9c',
-        dust: '#9a8c6e',
-        gold: { DEFAULT: '#c9a24b', light: '#e3c377', dark: '#8f6f2a' },
-        blood: { DEFAULT: '#9b3a24', light: '#d2674d' },
+        ink: c('ink'),
+        coal: c('coal'),
+        bark: c('bark'),
+        parchment: c('parchment'),
+        vellum: c('vellum'),
+        dust: c('dust'),
+        gold: { DEFAULT: c('gold'), light: c('gold-light'), dark: c('gold-dark') },
+        blood: { DEFAULT: c('blood'), light: c('blood-light') },
       },
       fontFamily: {
         display: ['Philosopher', 'Georgia', 'serif'],
@@ -22,22 +24,22 @@ export default {
       typography: {
         parchment: {
           css: {
-            '--tw-prose-body': '#eadfc4',
-            '--tw-prose-headings': '#e3c377',
-            '--tw-prose-lead': '#cdbf9c',
-            '--tw-prose-links': '#e3c377',
-            '--tw-prose-bold': '#f6edd3',
-            '--tw-prose-counters': '#c9a24b',
-            '--tw-prose-bullets': '#c9a24b',
-            '--tw-prose-hr': '#4a3b28',
-            '--tw-prose-quotes': '#cdbf9c',
-            '--tw-prose-quote-borders': '#8f6f2a',
-            '--tw-prose-captions': '#9a8c6e',
-            '--tw-prose-code': '#e3c377',
-            '--tw-prose-pre-code': '#eadfc4',
-            '--tw-prose-pre-bg': '#1d1712',
-            '--tw-prose-th-borders': '#6b5530',
-            '--tw-prose-td-borders': '#4a3b28',
+            '--tw-prose-body': 'rgb(var(--c-parchment))',
+            '--tw-prose-headings': 'rgb(var(--c-gold-light))',
+            '--tw-prose-lead': 'rgb(var(--c-vellum))',
+            '--tw-prose-links': 'rgb(var(--c-gold-light))',
+            '--tw-prose-bold': 'rgb(var(--c-parchment))',
+            '--tw-prose-counters': 'rgb(var(--c-gold))',
+            '--tw-prose-bullets': 'rgb(var(--c-gold))',
+            '--tw-prose-hr': 'rgb(var(--c-gold) / 0.3)',
+            '--tw-prose-quotes': 'rgb(var(--c-vellum))',
+            '--tw-prose-quote-borders': 'rgb(var(--c-gold-dark))',
+            '--tw-prose-captions': 'rgb(var(--c-dust))',
+            '--tw-prose-code': 'rgb(var(--c-gold-light))',
+            '--tw-prose-pre-code': 'rgb(var(--c-parchment))',
+            '--tw-prose-pre-bg': 'rgb(var(--c-coal))',
+            '--tw-prose-th-borders': 'rgb(var(--c-gold) / 0.4)',
+            '--tw-prose-td-borders': 'rgb(var(--c-gold) / 0.2)',
           },
         },
       },

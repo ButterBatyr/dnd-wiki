@@ -6,6 +6,12 @@ import { Img, removeImage } from '../lib/images';
 import { fmtDate } from '../lib/util';
 import type { Category, Entry } from '../lib/types';
 import MarkdownView from '../components/MarkdownView';
+import EntryBadge from '../components/EntryBadge';
+import SuggestEdit from '../components/SuggestEdit';
+import FavoriteButton from '../components/FavoriteButton';
+import NotesBox from '../components/NotesBox';
+import RelatedEntries from '../components/RelatedEntries';
+import { catColor } from '../lib/util';
 
 export default function EntryPage() {
   const { id } = useParams();
@@ -85,7 +91,12 @@ export default function EntryPage() {
         </div>
       )}
 
+      <div className="h-1 w-full rounded-sm" style={{ background: catColor(category) }} aria-hidden />
       <h1 className="text-3xl sm:text-4xl">{entry.title}</h1>
+      <div className="flex flex-wrap items-center gap-3">
+        <EntryBadge label={entry.badge} category={category} />
+        <FavoriteButton entryId={entry.id} />
+      </div>
       {entry.image_path && (
         <Img path={entry.image_path} alt={entry.title} className="frame max-h-[70vh] w-full object-contain p-1" />
       )}
@@ -99,6 +110,12 @@ export default function EntryPage() {
       )}
 
       <MarkdownView text={entry.body} />
+
+      <RelatedEntries entryId={entry.id} />
+
+      <NotesBox entryId={entry.id} />
+
+      {!isDm && entry.status === 'released' && <SuggestEdit entry={entry} />}
 
       {isDm && secret.trim() && (
         <section className="rounded-sm border border-blood/70 bg-blood/10 p-4">

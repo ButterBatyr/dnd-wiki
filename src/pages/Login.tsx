@@ -1,10 +1,13 @@
 import { useState, type FormEvent } from 'react';
-import { supabase, SITE_NAME } from '../lib/supabase';
+import { supabase } from '../lib/supabase';
+import { useSettings } from '../lib/settings';
 
 type Mode = 'signin' | 'signup' | 'magic';
 
 export default function Login() {
   const [mode, setMode] = useState<Mode>('signin');
+  const { settings } = useSettings();
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
@@ -21,7 +24,7 @@ export default function Login() {
         if (error) throw error;
         setMsg({ ok: true, text: 'Ссылка для входа отправлена на почту. Откройте её на этом устройстве.' });
       } else if (mode === 'signup') {
-        const { data, error } = await supabase.auth.signUp({ email, password, options: { emailRedirectTo: redirect } });
+        const { data, error } = await supabase.auth.signUp({ email, password, options: { emailRedirectTo: redirect, data: { name: name.trim() } } });
         if (error) throw error;
         if (!data.session) setMsg({ ok: true, text: 'Почти готово: подтвердите адрес по письму и войдите.' });
       } else {
@@ -48,7 +51,7 @@ export default function Login() {
 
   return (
     <div className="mx-auto flex min-h-screen max-w-md flex-col justify-center px-4 py-10">
-      <h1 className="text-center text-4xl">{SITE_NAME}</h1>
+      <h1 className="text-center text-4xl">{settings.siteName}</h1>
       <p className="mt-2 text-center text-vellum">Войдите, чтобы открыть записи кампании.</p>
       <div className="frame mt-6 p-5">
         <div className="mb-4 flex">
@@ -57,6 +60,12 @@ export default function Login() {
           {tab('magic', 'По ссылке')}
         </div>
         <form onSubmit={submit} className="space-y-4">
+          {mode === 'signup' && (
+            <div>
+              <label className="label" htmlFor="nm">Ваше имя (его увидят другие игроки)</label>
+              <input id="nm" required maxLength={40} className="input" value={name} onChange={(e) => setName(e.target.value)} />
+            </div>
+          )}
           <div>
             <label className="label" htmlFor="email">Почта</label>
             <input id="email" type="email" required autoComplete="email" className="input" value={email} onChange={(e) => setEmail(e.target.value)} />

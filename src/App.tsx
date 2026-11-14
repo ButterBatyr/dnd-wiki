@@ -8,6 +8,7 @@ import Browse from './pages/Browse';
 import EntryPage from './pages/EntryPage';
 import EntryEditor from './pages/EntryEditor';
 import Inventory from './pages/Inventory';
+import Chat from './pages/Chat';
 import Admin from './pages/Admin';
 
 function Gate() {
@@ -57,6 +58,7 @@ export default function App() {
         <Route path="browse" element={<Browse />} />
         <Route path="e/:id" element={<EntryPage />} />
         <Route path="inventory" element={<Inventory />} />
+        <Route path="chat" element={<Chat />} />
         <Route element={<DmOnly />}>
           <Route path="entry/new" element={<EntryEditor />} />
           <Route path="entry/:id/edit" element={<EntryEditor />} />

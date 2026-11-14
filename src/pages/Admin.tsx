@@ -3,12 +3,14 @@ import AdminRequests from '../admin/AdminRequests';
 import AdminEntries from '../admin/AdminEntries';
 import AdminCategories from '../admin/AdminCategories';
 import AdminUsers from '../admin/AdminUsers';
+import AdminSettings from '../admin/AdminSettings';
 
 const TABS = [
   { id: 'requests', label: 'Заявки', el: <AdminRequests /> },
   { id: 'entries', label: 'Записи', el: <AdminEntries /> },
   { id: 'categories', label: 'Разделы', el: <AdminCategories /> },
   { id: 'users', label: 'Игроки', el: <AdminUsers /> },
+  { id: 'settings', label: 'Настройки', el: <AdminSettings /> },
 ];
 
 export default function Admin() {

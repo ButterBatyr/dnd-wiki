@@ -13,6 +13,8 @@ export default function Browse() {
   const cat = params.get('cat') ?? '';
   const tag = params.get('tag') ?? '';
   const st = params.get('st') ?? '';
+  const fav = params.get('fav') === '1';
+  const mine = params.get('notes') === '1';
   const [cats, setCats] = useState<Category[]>([]);
   const [entries, setEntries] = useState<Entry[]>([]);
   const [allTags, setAllTags] = useState<string[]>([]);
@@ -37,22 +39,30 @@ export default function Browse() {
   useEffect(() => {
     let live = true;
     setLoading(true);
-    let query = supabase.from('entries').select('*').order('created_at', { ascending: false }).limit(200);
-    const clean = q.replace(/[%,()*]/g, ' ').trim();
-    if (clean) query = query.or(`title.ilike.%${clean}%,body.ilike.%${clean}%`);
-    if (cat && cats.length) query = query.in('category_id', descendantIds(cats, cat));
-    if (tag) query = query.contains('tags', [tag]);
-    if (isDm && st) query = query.eq('status', st);
-    query.then(({ data }) => {
+    (async () => {
+      let query = supabase.from('entries').select('*').order('created_at', { ascending: false }).limit(200);
+      const clean = q.replace(/[%,()*]/g, ' ').trim();
+      if (clean) query = query.or(`title.ilike.%${clean}%,body.ilike.%${clean}%`);
+      if (cat && cats.length) query = query.in('category_id', descendantIds(cats, cat));
+      if (tag) query = query.contains('tags', [tag]);
+      if (isDm && st) query = query.eq('status', st);
+      // Личные фильтры: избранное и записи, к которым у вас есть заметка
+      for (const [on, table] of [[fav, 'favorites'], [mine, 'entry_notes']] as const) {
+        if (!on) continue;
+        const { data } = await supabase.from(table).select('entry_id');
+        const ids = ((data as { entry_id: string }[]) ?? []).map((r) => r.entry_id);
+        query = query.in('id', ids.length ? ids : ['00000000-0000-0000-0000-000000000000']);
+      }
+      const { data } = await query;
       if (!live) return;
       setEntries((data as Entry[]) ?? []);
       setLoading(false);
-    });
+    })();
     return () => { live = false; };
-  }, [q, cat, tag, st, cats, isDm]);
+  }, [q, cat, tag, st, fav, mine, cats, isDm]);
 
   const options = useMemo(() => orderedCategories(cats), [cats]);
-  const catName = (id: string | null) => cats.find((c) => c.id === id)?.name;
+  const children = cat ? cats.filter((c) => c.parent_id === cat).sort((a, b) => a.position - b.position) : [];
 
   return (
     <div className="space-y-5">
@@ -68,7 +78,21 @@ export default function Browse() {
         <button className="btn btn-gold">Найти</button>
       </form>
 
+      {children.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {children.map((c) => (
+            <button key={c.id} onClick={() => set('cat', c.id)} className="badge border-gold/50 text-gold-light hover:bg-gold/10">
+              {c.icon ? `${c.icon} ` : ''}{c.name}
+            </button>
+          ))}
+        </div>
+      )}
+
       <div className="flex flex-wrap items-center gap-2">
+        <button onClick={() => set('fav', fav ? '' : '1')} aria-pressed={fav}
+          className={`badge ${fav ? 'border-gold bg-gold text-ink' : 'border-gold/40 text-vellum hover:border-gold'}`}>★ Избранное</button>
+        <button onClick={() => set('notes', mine ? '' : '1')} aria-pressed={mine}
+          className={`badge ${mine ? 'border-gold bg-gold text-ink' : 'border-gold/40 text-vellum hover:border-gold'}`}>📝 Мои заметки</button>
         {allTags.map((t) => (
           <button key={t} onClick={() => set('tag', tag === t ? '' : t)}
             className={`badge ${tag === t ? 'border-gold bg-gold text-ink' : 'border-gold/40 text-vellum hover:border-gold'}`}>
@@ -87,8 +111,8 @@ export default function Browse() {
       {loading ? <p className="text-dust">Ищем…</p> : entries.length === 0 ? (
         <p className="text-dust">Ничего не найдено. Попробуйте другой запрос или уберите фильтры.</p>
       ) : (
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
-          {entries.map((e) => <EntryCard key={e.id} entry={e} categoryName={catName(e.category_id)} />)}
+        <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3">
+          {entries.map((e) => <EntryCard key={e.id} entry={e} category={cats.find((c) => c.id === e.category_id)} />)}
         </div>
       )}
     </div>

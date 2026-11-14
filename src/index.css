@@ -2,22 +2,37 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Цвета по умолчанию (перекрываются настройками из админки) */
+:root {
+  --c-ink: 19 15 11;
+  --c-coal: 29 23 18;
+  --c-bark: 42 33 25;
+  --c-parchment: 234 223 196;
+  --c-vellum: 190 178 150;
+  --c-dust: 150 138 112;
+  --c-gold: 201 162 75;
+  --c-gold-light: 227 195 119;
+  --c-gold-dark: 143 111 42;
+  --c-blood: 155 58 36;
+  --c-blood-light: 210 103 77;
+}
+
 @layer base {
-  html { background: #130f0b; }
+  html { background: rgb(var(--c-ink)); }
   body {
     @apply font-body text-parchment antialiased;
-    background-color: #130f0b;
+    background-color: rgb(var(--c-ink));
     background-image:
-      radial-gradient(1100px 520px at 50% -8%, rgba(201, 162, 75, 0.11), transparent 62%),
-      radial-gradient(700px 480px at 100% 100%, rgba(155, 58, 36, 0.12), transparent 60%);
+      radial-gradient(1100px 520px at 50% -8%, rgb(var(--c-gold) / 0.11), transparent 62%),
+      radial-gradient(700px 480px at 100% 100%, rgb(var(--c-blood) / 0.12), transparent 60%);
     background-attachment: fixed;
     font-size: 17px;
     line-height: 1.6;
   }
   h1, h2, h3, h4 { @apply font-display text-gold-light; }
   a { @apply text-gold-light; }
-  :focus-visible { outline: 2px solid #e3c377; outline-offset: 2px; }
-  ::selection { background: rgba(201, 162, 75, 0.35); }
+  :focus-visible { outline: 2px solid rgb(var(--c-gold-light)); outline-offset: 2px; }
+  ::selection { background: rgb(var(--c-gold) / 0.35); }
 }
 
 @layer components {
@@ -37,8 +52,22 @@
   .panel { @apply rounded-sm border border-gold/25 bg-coal/80 p-4; }
   .badge { @apply inline-block rounded-sm border px-2 py-0.5 font-display text-xs; }
   .frame { @apply border-4 border-double border-gold/45 bg-coal/70; }
+
+  /* Карточка записи: подъём и свечение при наведении, картинка чуть приближается */
+  .card-lift { transition: transform 0.25s ease, box-shadow 0.25s ease; }
+  .card-lift:hover, .card-lift:focus-within {
+    transform: translateY(-4px);
+    box-shadow: 0 14px 30px -14px rgb(var(--c-gold) / 0.6);
+  }
+  .card-zoom { transition: transform 0.6s ease; }
+  .card-lift:hover .card-zoom { transform: scale(1.07); }
+
+  /* Лента раздела */
+  .ribbon { transition: transform 0.25s ease, filter 0.25s ease; }
+  .ribbon:hover { transform: translateX(4px); filter: brightness(1.12); }
 }
 
 @media (prefers-reduced-motion: reduce) {
   * { animation: none !important; transition: none !important; }
+  .card-lift:hover, .ribbon:hover { transform: none; }
 }

@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from './supabase';
 import type { Profile } from './types';
@@ -9,6 +9,7 @@ interface Ctx {
   isDm: boolean;
   loading: boolean;
   signOut: () => Promise<void>;
+  refreshProfile: () => Promise<void>;
 }
 
 const AuthCtx = createContext<Ctx>({
@@ -17,6 +18,7 @@ const AuthCtx = createContext<Ctx>({
   isDm: false,
   loading: true,
   signOut: async () => {},
+  refreshProfile: async () => {},
 });
 export const useAuth = () => useContext(AuthCtx);
 
@@ -41,23 +43,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const uid = session?.user.id;
-  useEffect(() => {
+  const refreshProfile = useCallback(async () => {
     if (!uid) return;
-    let live = true;
-    supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', uid)
-      .maybeSingle()
-      .then(({ data }) => {
-        if (!live) return;
-        setProfile((data as Profile | null) ?? null);
-        setLoading(false);
-      });
-    return () => {
-      live = false;
-    };
+    const { data } = await supabase.from('profiles').select('*').eq('id', uid).maybeSingle();
+    setProfile((data as Profile | null) ?? null);
+    setLoading(false);
   }, [uid]);
+
+  useEffect(() => {
+    refreshProfile();
+  }, [refreshProfile]);
 
   const value: Ctx = {
     session,
@@ -67,6 +62,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     signOut: async () => {
       await supabase.auth.signOut();
     },
+    refreshProfile,
   };
   return <AuthCtx.Provider value={value}>{children}</AuthCtx.Provider>;
 }

@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { Img, removeImage, uploadImage } from '../lib/images';
+import { removeImage, uploadImage, useSignedUrl } from '../lib/images';
+import { CropFrame } from '../components/CropFrame';
+import ImageCropper from '../components/ImageCropper';
 import { compressImage, orderedCategories, parseTags } from '../lib/util';
-import type { Category, Entry } from '../lib/types';
+import type { Category, Crop, Entry } from '../lib/types';
 import MarkdownView from '../components/MarkdownView';
 
 export default function EntryEditor() {
@@ -14,6 +16,10 @@ export default function EntryEditor() {
 
   const [cats, setCats] = useState<Category[]>([]);
   const [title, setTitle] = useState(params.get('title') ?? '');
+  const [summary, setSummary] = useState('');
+  const [badge, setBadge] = useState('');
+  const [crop, setCrop] = useState<Crop | null>(null);
+  const [cropping, setCropping] = useState(false);
   const [body, setBody] = useState('');
   const [secret, setSecret] = useState('');
   const [categoryId, setCategoryId] = useState('');
@@ -37,7 +43,7 @@ export default function EntryEditor() {
       const { data } = await supabase.from('entries').select('*').eq('id', id).maybeSingle();
       if (!data) { setError('Запись не найдена'); setLoading(false); return; }
       const e = data as Entry;
-      setTitle(e.title); setBody(e.body); setCategoryId(e.category_id ?? '');
+      setTitle(e.title); setBody(e.body); setSummary(e.summary ?? ''); setBadge(e.badge ?? ''); setCrop(e.image_crop); setCategoryId(e.category_id ?? '');
       setTags(e.tags.join(', ')); setReleased(e.status === 'released');
       setImagePath(e.image_path); setOldImage(e.image_path);
       const s = await supabase.from('entry_secrets').select('body').eq('entry_id', id).maybeSingle();
@@ -47,6 +53,9 @@ export default function EntryEditor() {
   }, [id]);
 
   const filePreview = useMemo(() => (file ? URL.createObjectURL(file) : null), [file]);
+  const savedUrl = useSignedUrl(file ? null : imagePath);
+  const previewSrc = filePreview ?? savedUrl;
+  const presets = cats.find((c) => c.id === categoryId)?.statuses ?? [];
   const options = useMemo(() => orderedCategories(cats), [cats]);
 
   async function save(e: FormEvent) {
@@ -64,6 +73,9 @@ export default function EntryEditor() {
       const row = {
         title: title.trim(),
         body,
+        summary: summary.trim(),
+        badge: badge.trim() || null,
+        image_crop: path ? crop : null,
         image_path: path,
         category_id: categoryId || null,
         tags: parseTags(tags),
@@ -124,6 +136,19 @@ export default function EntryEditor() {
         </div>
       </div>
 
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div>
+          <label className="label" htmlFor="bd">Статус записи (необязательно)</label>
+          <input id="bd" className="input" list="badge-presets" value={badge} maxLength={30} onChange={(e) => setBadge(e.target.value)} placeholder="жив, сломан, важен…" />
+          <datalist id="badge-presets">{presets.map((p) => <option key={p.label} value={p.label} />)}</datalist>
+        </div>
+      </div>
+
+      <div>
+        <label className="label" htmlFor="sm">Краткое описание для карточки (до 240 знаков)</label>
+        <textarea id="sm" className="input min-h-[4.5rem]" maxLength={240} value={summary} onChange={(e) => setSummary(e.target.value)} placeholder="Если оставить пустым, возьмётся начало основного текста" />
+      </div>
+
       <div>
         <div className="mb-1 flex items-center justify-between">
           <label className="label mb-0" htmlFor="b">Описание (Markdown)</label>
@@ -147,19 +172,26 @@ export default function EntryEditor() {
       <div>
         <span className="label">Картинка</span>
         <div className="flex flex-wrap items-start gap-4">
-          {filePreview ? (
-            <img src={filePreview} alt="Новая картинка" className="h-32 rounded-sm border border-gold/30 object-cover" />
-          ) : imagePath ? (
-            <Img path={imagePath} alt="Текущая картинка" className="h-32 rounded-sm border border-gold/30 object-cover" />
-          ) : null}
+          {previewSrc && (
+            <div className="w-48">
+              <CropFrame src={previewSrc} crop={crop} alt="Так картинка выглядит в карточке" className="rounded-sm border border-gold/30" />
+              <p className="mt-1 text-xs text-dust">Так будет в карточке</p>
+            </div>
+          )}
           <div className="space-y-2">
-            <input type="file" accept="image/*" onChange={(e) => setFile(e.target.files?.[0] ?? null)} className="block text-sm text-vellum" />
-            {(imagePath || file) && (
-              <button type="button" className="btn btn-danger btn-sm" onClick={() => { setFile(null); setImagePath(null); }}>Убрать картинку</button>
+            <input type="file" accept="image/*" onChange={(e) => { setFile(e.target.files?.[0] ?? null); setCrop(null); }} className="block text-sm text-vellum" />
+            {previewSrc && (
+              <div className="flex flex-wrap gap-2">
+                <button type="button" className="btn btn-ghost btn-sm" onClick={() => setCropping(true)}>Обрезать для карточки</button>
+                <button type="button" className="btn btn-danger btn-sm" onClick={() => { setFile(null); setImagePath(null); setCrop(null); }}>Убрать картинку</button>
+              </div>
             )}
           </div>
         </div>
       </div>
+      {cropping && previewSrc && (
+        <ImageCropper src={previewSrc} initial={crop} onCancel={() => setCropping(false)} onDone={(c) => { setCrop(c); setCropping(false); }} />
+      )}
 
       <label className="flex items-center gap-3">
         <input type="checkbox" className="h-5 w-5 accent-[#c9a24b]" checked={released} onChange={(e) => setReleased(e.target.checked)} />
